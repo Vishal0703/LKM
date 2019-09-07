@@ -8,13 +8,13 @@
 
 int main(int argc, char const *argv[])
 {
-	int fd, i, N;
-	char ch, write_buf[100], read_buf[100];
-	char mode;
+	int fd, i, N, ret;
+	char ch, read_buf[100];
+	unsigned char mode, write_buf[100];
 
 	fd = open(FILE, O_RDWR);		
 	
-	if(fd == -1)
+	if(fd == -1) 
 	{
 		printf("file either doesn't exist or is locked by another process\n");
 		return -1;
@@ -22,12 +22,12 @@ int main(int argc, char const *argv[])
 
 	while(1)
 	{
-		printf("Want to sort strings or integers? \n press s for strings and i for integers\n");
+		printf("Want to sort integers or strings? \npress i for integers and s for strings\n");
 		scanf("%c%*c", &ch);
 		if(ch == 's')
-		{ mode = 0xFF; break;}
+		{ mode = 0xF0; break;}
 		else if(ch == 'i')
-		{ mode = 0xF0; break; }
+		{ mode = 0xFF; break; }
 		else
 		{ printf("Enter a valid choice\n"); }
 	}
@@ -41,18 +41,19 @@ int main(int argc, char const *argv[])
 
 	write(fd, write_buf, sizeof(write_buf));
 	
-	
-	while(1)
+	ch = 'r';
+	while(ch != 'e')
 	{
-		printf("r: read from device, w: write to device, e: exit \n enter command\n");
+		printf("\nr: read from device, w: write to device, e: exit \nenter command\n");
 		scanf("%c%*c", &ch);
 		switch(ch)
 		{
 			case 'w':
-					printf("enter data\n");
+					printf("enter object\n");
 					scanf("%[^\n]%*c", write_buf);
 					// printf("gonna write it\n");
-					write(fd, write_buf, sizeof(write_buf));
+					ret = write(fd, write_buf, sizeof(write_buf));
+					printf("%d more objects to write\n",ret);
 					break;
 			case 'r':
 					read(fd, read_buf, sizeof(read_buf));
@@ -67,6 +68,7 @@ int main(int argc, char const *argv[])
 		}
 
 	}
+
 	close(fd);
 	return 0;
 }
