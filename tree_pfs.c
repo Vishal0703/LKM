@@ -40,8 +40,6 @@ struct data_holder
 	struct int_tree* it;
 	struct char_tree* head_ct;
 	struct int_tree* head_it;
-	struct char_tree* tail_ct;
-	struct int_tree* tail_it;
 	int pid;
 	int mode;
 	char tm;
@@ -80,11 +78,9 @@ void initialize_data(void)
 		proc_data[i].it = NULL;
 		proc_data[i].head_ct = NULL;
 		proc_data[i].head_it = NULL;
-		proc_data[i].tail_ct = NULL;
-		proc_data[i].tail_it = NULL;
 		proc_data[i].pid = -1;
 		proc_data[i].mode = -1;
-		proc_data[i].tm = 'i';
+		proc_data[i].tm = 'z';
 		proc_data[i].curr_read = 0;
 	}
 }
@@ -139,40 +135,264 @@ void int_to_char(char temp[], int num)
 	temp[count] = '\0';
 }
 
-void calculate_info(struct obj_info* temp)
-{
 
+int* ciaf_int(struct obj_info* temp, struct int_tree* node, struct int_tree* root)
+{
+	int *arr = kmalloc(3*sizeof(int), GFP_KERNEL); 
+	int *l, *r;
+
+	if(node == NULL)
+	{
+		arr[0] = 0; arr[1] = 0; arr[2] = 0;
+		return arr;
+	}
+	l = ciaf_int(temp, node->left, root);
+	r = ciaf_int(temp, node->right, root);
+
+	if(node != root)
+	{
+		if(l[0]==0 && r[0]==0)
+			temp->deg1cnt = temp->deg1cnt + 1;
+		else if(l[0]!=0 && r[0]!=0)
+			temp->deg3cnt = temp->deg3cnt + 1;
+		else
+			temp->deg2cnt = temp->deg2cnt + 1;
+	}
+	if(node == root)
+	{
+		if(l[0]!=0 && r[0]!=0)
+			temp->deg2cnt = temp->deg2cnt + 1;
+		else if( l[0]==0 || r[0]== 0)
+			temp->deg1cnt = temp->deg1cnt + 1;
+	}
+	arr[0] = l[0] + r[0] + 1;
+	arr[1] = min(l[1],r[1]) + 1;
+	arr[2] = max(l[2],r[2]) + 1;
+	return arr;
 }
 
+int* ciaf_str(struct obj_info* temp, struct char_tree* node, struct char_tree* root)
+{
+	int *arr = kmalloc(3*sizeof(int), GFP_KERNEL); 
+	int *l, *r;
+
+	if(node == NULL)
+	{
+		arr[0] = 0; arr[1] = 0; arr[2] = 0;
+		return arr;
+	}
+	l = ciaf_str(temp, node->left, root);
+	r = ciaf_str(temp, node->right, root);
+
+	if(node != root)
+	{
+		if(l[0]==0 && r[0]==0)
+			temp->deg1cnt = temp->deg1cnt + 1;
+		else if(l[0]!=0 && r[0]!=0)
+			temp->deg3cnt = temp->deg3cnt + 1;
+		else
+			temp->deg2cnt = temp->deg2cnt + 1;
+	}
+	if(node == root)
+	{
+		if(l[0]!=0 && r[0]!=0)
+			temp->deg2cnt = temp->deg2cnt + 1;
+		else if( l[0]==0 || r[0]== 0)
+			temp->deg1cnt = temp->deg1cnt + 1;
+	}
+	arr[0] = l[0] + r[0] + 1;
+	arr[1] = min(l[1],r[1]) + 1;
+	arr[2] = max(l[2],r[2]) + 1;
+	return arr;
+}	
+
+
+int calculate_info(struct obj_info* temp, int id)
+{
+	int *arr;
+	if(proc_data[id].mode == 0)
+		arr = ciaf_int(temp, proc_data[id].it, proc_data[id].it);
+	else
+		arr = ciaf_str(temp, proc_data[id].ct, proc_data[id].ct);
+	temp->mindepth = arr[1]-1;
+	temp->maxdepth = arr[2]-1;
+	return arr[0];
+}
+
+void foaf_int(struct search_obj* temp, struct int_tree* root)
+{
+	temp->found = 0;
+	while(root!=NULL)
+	{
+		if(root->node == temp->int_obj)
+		{
+			temp->found = 1;
+			break;
+		}
+		else if(temp->int_obj > root->node)
+			root = root->right;
+		else
+			root = root->left;
+	}
+}
+
+void foaf_str(struct search_obj* temp, struct char_tree* root)
+{
+	temp->found = 0;
+	while(root!=NULL)
+	{
+		if(strcmp(root->node,temp->str) == 0)
+		{
+			temp->found = 1;
+			break;
+		}
+		else if(strcmp(temp->str, root->node) == 1)
+			root = root->right;
+		else
+			root = root->left;
+	}
+}
+
+void find_obj(struct search_obj* temp, int id)
+{
+	if(proc_data[id].mode == 0)
+	{
+		if(temp->objtype == 0xFF)
+			foaf_int(temp, proc_data[id].it);
+		else
+			temp->found = 0;
+	}
+	else
+	{
+		if(temp->objtype == 0xF0)
+			foaf_str(temp, proc_data[id].ct);
+		else
+			temp->found = 0;
+	}
+}
 
 void inorder_int(struct int_tree* root, struct int_tree** head)
 {
 	if(root==NULL)
-	{
-		printk(KERN_INFO "root null\n");
 		return;
-	}
 	inorder_int(root->left, head);
 	struct int_tree* temp = kmalloc(sizeof(struct int_tree), GFP_KERNEL);
 	temp->node = root->node;
 	temp->left = NULL;
 	if(*head==NULL)
-	{
 		*head = temp;
-		printk(KERN_INFO "Head allocated with value %d\n", (*head)->node);
-	}
 	else
 	{
 		struct int_tree* last = *head;
 		while(last->left)
-		{
-			printk(KERN_INFO "value is : %d\n", last->node);
 			last = last->left;
-		}
 		last->left = temp;
 	}
 	inorder_int(root->right, head);
 }
+
+void inorder_str(struct char_tree* root, struct char_tree** head)
+{
+	if(root==NULL)
+		return;
+	inorder_str(root->left, head);
+	struct char_tree* temp = kmalloc(sizeof(struct char_tree), GFP_KERNEL);
+	strcpy(temp->node ,root->node);
+	temp->left = NULL;
+	if(*head==NULL)
+		*head = temp;
+	else
+	{
+		struct char_tree* last = *head;
+		while(last->left)
+			last = last->left;
+		last->left = temp;
+	}
+	inorder_str(root->right, head);
+}
+
+void preorder_int(struct int_tree* root, struct int_tree** head)
+{
+	if(root==NULL)
+		return;
+	struct int_tree* temp = kmalloc(sizeof(struct int_tree), GFP_KERNEL);
+	temp->node = root->node;
+	temp->left = NULL;
+	if(*head==NULL)
+		*head = temp;
+	else
+	{
+		struct int_tree* last = *head;
+		while(last->left)
+			last = last->left;
+		last->left = temp;
+	}
+	preorder_int(root->left, head);
+	preorder_int(root->right, head);
+}
+
+void preorder_str(struct char_tree* root, struct char_tree** head)
+{
+	if(root==NULL)
+		return;
+	struct char_tree* temp = kmalloc(sizeof(struct char_tree), GFP_KERNEL);
+	strcpy(temp->node ,root->node);
+	temp->left = NULL;
+	if(*head==NULL)
+		*head = temp;
+	else
+	{
+		struct char_tree* last = *head;
+		while(last->left)
+			last = last->left;
+		last->left = temp;
+	}
+	preorder_str(root->left, head);
+	preorder_str(root->right, head);
+}
+
+void postorder_int(struct int_tree* root, struct int_tree** head)
+{
+	if(root==NULL)
+		return;
+	postorder_int(root->left, head);
+	postorder_int(root->right, head);
+	
+	struct int_tree* temp = kmalloc(sizeof(struct int_tree), GFP_KERNEL);
+	temp->node = root->node;
+	temp->left = NULL;
+	if(*head==NULL)
+		*head = temp;
+	else
+	{
+		struct int_tree* last = *head;
+		while(last->left)
+			last = last->left;
+		last->left = temp;
+	}
+}
+
+void postorder_str(struct char_tree* root, struct char_tree** head)
+{
+	if(root==NULL)
+		return;
+	postorder_str(root->left, head);
+	postorder_str(root->right, head);	
+	
+	struct char_tree* temp = kmalloc(sizeof(struct char_tree), GFP_KERNEL);
+	strcpy(temp->node ,root->node);
+	temp->left = NULL;
+	if(*head==NULL)
+		*head = temp;
+	else
+	{
+		struct char_tree* last = *head;
+		while(last->left)
+			last = last->left;
+		last->left = temp;
+	}
+}
+
 
 void insert_int(struct int_tree** root, int val)
 {
@@ -190,46 +410,21 @@ void insert_int(struct int_tree** root, int val)
 		insert_int(&((*root)->left), val);
 }
 
-void insert_str(struct char_tree* root, char temp[])
+void insert_str(struct char_tree** root, char temp[])
 {
-	if(root == NULL)
+	if(*root == NULL)
 	{
 		struct char_tree* t = kmalloc(sizeof(struct char_tree), GFP_KERNEL);
 		strcpy(t->node, temp);
-		root = t;
+		t->left = t->right = NULL;
+		*root = t;
 		return;
 	}
-	else if(strcmp(temp, root->node) == 1 || strcmp(temp, root->node) == 0)
-		insert_str(root->right, temp);
+	else if(strcmp(temp, (*root)->node) == 1 || strcmp(temp, (*root)->node) == 0)
+		insert_str(&((*root)->right), temp);
 	else
-		insert_str(root->left, temp);
+		insert_str(&((*root)->left), temp);
 }
-
-static int compare_int(const void *lhs, const void *rhs) 
-{
-    int lhs_integer = *(const int *)(lhs);
-    int rhs_integer = *(const int *)(rhs);
-
-    if (lhs_integer < rhs_integer) return -1;
-    if (lhs_integer > rhs_integer) return 1;
-    return 0;
-}
-
-static int compare_str(const void *lhs, const void *rhs) 
-{
-    char* lhs_integer = (const char *)(lhs);
-    char* rhs_integer = (const char *)(rhs);
-
-    return strcmp(lhs_integer,rhs_integer);
-}
-
-// void sort_data(int id)
-// {
-// 	if(proc_data[id].mode == 0)
-// 		sort(proc_data[id].arr, proc_data[id].max_num, sizeof(int), &compare_int, NULL);
-// 	else
-// 		sort(proc_data[id].data, proc_data[id].max_num, sizeof(char)*100, &compare_str, NULL);
-// }
 
 int device_open(struct inode* inode, struct file* filp)
 {
@@ -261,8 +456,6 @@ int device_close(struct inode* inode, struct file* filp)
 	proc_data[id].it = NULL;
 	proc_data[id].head_ct = NULL;
 	proc_data[id].head_it = NULL;
-	proc_data[id].tail_ct = NULL;
-	proc_data[id].tail_it = NULL;
 	proc_data[id].pid = -1;
 	proc_data[id].mode = -1;
 	proc_data[id].tm = 'i';
@@ -280,54 +473,120 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 	printk(KERN_INFO "tree_pfs: reading data for process %d\n", pid);
 	if(proc_data[id].tm == 'i')
 	{
-		if(proc_data[id].mode == 0 && proc_data[id].curr_read == 0)
+		if(proc_data[id].mode == 0)
 		{
-			inorder_int(proc_data[id].it, &(proc_data[id].head_it));
-			printk(KERN_INFO "tree_pfs: inorder done\n");
+			if(proc_data[id].curr_read == 0)
+			{
+				inorder_int(proc_data[id].it, &(proc_data[id].head_it));
+				printk(KERN_INFO "tree_pfs: inorder done for process %d\n", pid);
+			}
 			if(proc_data[id].head_it == NULL)
 			{
-				printk(KERN_ALERT "tree_pfs: No more data to read\n");
+				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
 				return -1;
 			}
-			printk(KERN_INFO "tree_ pfs: value read is %d\n", (proc_data[id].head_it)->node);
+			printk(KERN_INFO "tree_ pfs: value read is %d for process %d\n", (proc_data[id].head_it)->node, pid);
 			int_to_char(temp, (proc_data[id].head_it)->node);
 			proc_data[id].head_it = (proc_data[id].head_it)->left;
 			proc_data[id].curr_read++;
 		}
-		else if(proc_data[id].mode == 0 && proc_data[id].curr_read != 0)
+		else if(proc_data[id].mode == 1)
 		{
-			if(proc_data[id].head_it == NULL)
+			if(proc_data[id].curr_read == 0)
 			{
-				printk(KERN_ALERT "tree_pfs: No more data to read\n");
+				inorder_str(proc_data[id].ct, &(proc_data[id].head_ct));
+				printk(KERN_INFO "tree_pfs: inorder done for process %d\n", pid);
+			}
+			if(proc_data[id].head_ct == NULL)
+			{
+				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
 				return -1;
 			}
-			printk(KERN_INFO "tree_ pfs: value read is %d\n", (proc_data[id].head_it)->node);
-			int_to_char(temp, proc_data[id].head_it->node);
-			proc_data[id].head_it = (proc_data[id].head_it)->left;
-		}
+			printk(KERN_INFO "tree_ pfs: value read is %s for process %d\n", (proc_data[id].head_ct)->node, pid);
+			strcpy(temp, (proc_data[id].head_ct)->node);
+			proc_data[id].head_ct = (proc_data[id].head_ct)->left;
+			proc_data[id].curr_read++;
+		}		
 	}
-	// else if(proc_data[id].tm == 'p')
-	// 	// preorder();
-	// else
-	// 	// postorder();
+	
+	else if(proc_data[id].tm == 'p')
+	{
+		if(proc_data[id].mode == 0)
+		{
+			if(proc_data[id].curr_read == 0)
+			{
+				preorder_int(proc_data[id].it, &(proc_data[id].head_it));
+				printk(KERN_INFO "tree_pfs: preorder done for process %d\n", pid);
+			}
+			if(proc_data[id].head_it == NULL)
+			{
+				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
+				return -1;
+			}
+			printk(KERN_INFO "tree_ pfs: value read is %d for process %d\n", (proc_data[id].head_it)->node, pid);
+			int_to_char(temp, (proc_data[id].head_it)->node);
+			proc_data[id].head_it = (proc_data[id].head_it)->left;
+			proc_data[id].curr_read++;
+		}
+		else if(proc_data[id].mode == 1)
+		{
+			if(proc_data[id].curr_read == 0)
+			{
+				preorder_str(proc_data[id].ct, &(proc_data[id].head_ct));
+				printk(KERN_INFO "tree_pfs: preorder done for process %d\n", pid);
+			}
+			if(proc_data[id].head_ct == NULL)
+			{
+				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
+				return -1;
+			}
+			printk(KERN_INFO "tree_ pfs: value read is %s for process %d\n", (proc_data[id].head_ct)->node, pid);
+			strcpy(temp, (proc_data[id].head_ct)->node);
+			proc_data[id].head_ct = (proc_data[id].head_ct)->left;
+			proc_data[id].curr_read++;
+		}		
+	}
+	
+	else if(proc_data[id].tm == 's')
+	{
+		if(proc_data[id].mode == 0)
+		{
+			if(proc_data[id].curr_read == 0)
+			{
+				postorder_int(proc_data[id].it, &(proc_data[id].head_it));
+				printk(KERN_INFO "tree_pfs: postorder done for process %d\n", pid);
+			}
+			if(proc_data[id].head_it == NULL)
+			{
+				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
+				return -1;
+			}
+			printk(KERN_INFO "tree_ pfs: value read is %d for process %d\n", (proc_data[id].head_it)->node, pid);
+			int_to_char(temp, (proc_data[id].head_it)->node);
+			proc_data[id].head_it = (proc_data[id].head_it)->left;
+			proc_data[id].curr_read++;
+		}
+		else if(proc_data[id].mode == 1)
+		{
+			if(proc_data[id].curr_read == 0)
+			{
+				postorder_str(proc_data[id].ct, &(proc_data[id].head_ct));
+				printk(KERN_INFO "tree_pfs: postorder done for process %d\n", pid);
+			}
+			if(proc_data[id].head_ct == NULL)
+			{
+				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
+				return -1;
+			}
+			printk(KERN_INFO "tree_ pfs: value read is %s for process %d\n", (proc_data[id].head_ct)->node, pid);
+			strcpy(temp, (proc_data[id].head_ct)->node);
+			proc_data[id].head_ct = (proc_data[id].head_ct)->left;
+			proc_data[id].curr_read++;
+		}		
+	}
+
 	ret = copy_to_user(bufStoreData, temp, bufsize);
-	// if(proc_data[id].curr_write != proc_data[id].max_num)
-	// 	return -1;
-	// else if(proc_data[id].curr_read == proc_data[id].max_num)
-	// {
-	// 	printk(KERN_ALERT "pfs: No more data to read for process %d\n", pid);
-	// 	return -1;
-	// }
-	// else
-	// {
-	// 	if(proc_data[id].mode == 0)
-	// 		int_to_char(temp, proc_data[id].arr[proc_data[id].curr_read]);
-	// 	else
-	// 		strcpy(temp, proc_data[id].data[proc_data[id].curr_read]);
-	// 	proc_data[id].curr_read++;
-	// }
-	// ret = copy_to_user(bufStoreData, temp, bufsize);
-	// return ret;
+	return ret;
 }
 
 ssize_t device_write(struct file *filp, const char* bufSourceData, size_t bufsize, loff_t* curroffset)
@@ -340,8 +599,10 @@ ssize_t device_write(struct file *filp, const char* bufSourceData, size_t bufsiz
 	if(proc_data[id].mode == 0)
 		insert_int(&proc_data[id].it, char_to_int(temp));
 	else
-		insert_str(proc_data[id].ct, temp);
-	
+		insert_str(&proc_data[id].ct, temp);
+	proc_data[id].curr_read = 0;
+	proc_data[id].head_it = NULL;
+	proc_data[id].head_ct = NULL;
 	printk(KERN_INFO "tree_pfs: node insertion comlete for process %d\n", pid);
 	return ret;
 }
@@ -355,6 +616,7 @@ static long device_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
 	char tm;
 	struct obj_info temp;
 	struct search_obj st;
+	int num_nodes;
 	switch(cmd)
 	{
 		case PB2_SET_TYPE:
@@ -372,40 +634,46 @@ static long device_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
 							proc_data[id].mode = 1;
 						else
 							return -1;
+						printk(KERN_INFO "tree_pfs: Mode changed to mode %c for process %d \n", t, pid);
 						return 0;
 
 		case PB2_SET_ORDER:
 						copy_from_user(&tm, (char *)arg, sizeof(tm));
-						if(tm == '0')
+						if(tm == 'i')
 							proc_data[id].tm = 'i';
-						else if(tm == '1')
+						else if(tm == 'p')
 							proc_data[id].tm = 'p';
-						else if(tm == '2')
+						else if(tm == 's')
 							proc_data[id].tm = 's';
 						else
 							return -1;
 
 						if(proc_data[id].mode == 0)
-							proc_data[id].head_it = proc_data[id].it;
+							proc_data[id].head_it = NULL;
 						else
-							proc_data[id].head_ct = proc_data[id].ct;
+							proc_data[id].head_ct = NULL;
+						proc_data[id].curr_read = 0;
+						printk(KERN_INFO "tree_pfs: Traversal order set to %c for process %d\n", tm, pid);
 
 						return 0; 
 
 		case PB2_GET_INFO:
 						copy_from_user(&temp, (struct obj_info *)arg, sizeof(temp));
-						// calculate_info(temp);
+						temp.deg1cnt = temp.deg2cnt = temp.deg3cnt = temp.maxdepth = temp.mindepth = 0;
+						num_nodes = calculate_info(&temp, id);
+						printk(KERN_INFO "tree_pfs: info calculated for process %d\n", pid);
 						copy_to_user((struct obj_info *)arg, &temp, sizeof(temp));
+						return num_nodes;
 
 		case PB2_GET_OBJ:
 						copy_from_user(&st, (struct search_obj *)arg, sizeof(st));
-						// find_obj(st);
+						find_obj(&st, id);
 						copy_to_user((struct search_obj *)arg, &st, sizeof(st));
-
+						printk(KERN_INFO "tree_pfs: Object find completed for process %d\n", pid);
+						return 0;
 
 	}
 }
-
 
 
 struct file_operations fops = {

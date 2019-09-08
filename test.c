@@ -42,6 +42,16 @@ struct abc
 	struct cd* kool;
 };
 
+
+int* func()
+{
+	int *arr = malloc(3*sizeof(int));
+	arr[0] = 1;
+	arr[1] = 2;
+	arr[2] = 3;
+	return arr;
+}
+
 int main()
 {
 	// char c[10], d[10];
@@ -74,12 +84,15 @@ int main()
 	// a = &c;
 	// printf("a = %d\n", *a);
 	// printf("b = %d\n", *b);
-
-	struct abc data[3];
-	// (data[0].kool) = NULL;
-	struct cd *temp = malloc(sizeof(struct cd));
-	temp->val = 5;
-	data[0].kool = temp;
-	printf("%d\n", data[0].kool->val);
+	int arr[3] = {0,0,0};
+	int *l;
+	l = func();
+	printf("%d %d %d\n", l[0], l[1], l[2]);
+	// struct abc data[3];
+	// // (data[0].kool) = NULL;
+	// struct cd *temp = malloc(sizeof(struct cd));
+	// temp->val = 5;
+	// data[0].kool = temp;
+	// printf("%d\n", data[0].kool->val);
 	return 0;
 }
