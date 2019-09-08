@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<string.h>
+#include<stdlib.h>
 
 int char_to_int(char* temp)
 {
@@ -29,6 +30,18 @@ void int_to_char(char temp[], int num)
 	temp[count] = '\0';
 }
 
+struct cd
+{
+	int val;
+	struct cd* t;
+};
+
+struct abc
+{
+	int n;
+	struct cd* kool;
+};
+
 int main()
 {
 	// char c[10], d[10];
@@ -52,7 +65,21 @@ int main()
 
 	// printf("%s\n", temp2);
 
-	unsigned char c = 0xFF;
-	printf("%d\n", c);
+	// unsigned char c = 0xFF;
+	// printf("%d\n", c);
+	// int c = 9;
+	// int *a = NULL;
+	// int *b ;
+	// b = a;
+	// a = &c;
+	// printf("a = %d\n", *a);
+	// printf("b = %d\n", *b);
+
+	struct abc data[3];
+	// (data[0].kool) = NULL;
+	struct cd *temp = malloc(sizeof(struct cd));
+	temp->val = 5;
+	data[0].kool = temp;
+	printf("%d\n", data[0].kool->val);
 	return 0;
 }

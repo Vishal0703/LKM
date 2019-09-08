@@ -6,7 +6,8 @@
 # obj-m += startstop.o
 # startstop-objs := start.o stop.o
 # obj-m += mydevice.o
-obj-m += pfs.o
+# obj-m += pfs.o
+obj-m += tree_pfs.o
 #obj-m += newdevice.o
 # LINVER := $(shell uname -r)
 # CWDD := $(shell pwd)
