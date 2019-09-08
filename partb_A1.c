@@ -153,8 +153,8 @@ int device_open(struct inode* inode, struct file* filp)
 		return -1;
 	}
 	proc_data[id].pid = pid;
-	printk(KERN_INFO "pfs: device opened\n");
-	printk(KERN_INFO "pfs: The process id is %d and the index is %d\n", pid, id);
+	printk(KERN_INFO "partb_A1: device opened\n");
+	printk(KERN_INFO "partb_A1: The process id is %d and the index is %d\n", pid, id);
 	return 0;
 } 
 
@@ -172,7 +172,7 @@ int device_close(struct inode* inode, struct file* filp)
 	proc_data[id].sorted = 0;
 	proc_data[id].curr_read = 0;
 	mutex_unlock(&proc_data[id].mt);
-	printk(KERN_INFO "pfs: closing device for process %d\n", pid);
+	printk(KERN_INFO "partb_A1: closing device for process %d\n", pid);
 	return 0;
 }
 
@@ -181,12 +181,12 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 	int pid = (int)task_pid_nr(current);
 	int id = find_proc(pid);
 	char temp[100];
-	printk(KERN_INFO "pfs: reading data for process %d\n", pid);
+	printk(KERN_INFO "partb_A1: reading data for process %d\n", pid);
 	if(proc_data[id].curr_write != proc_data[id].max_num)
 		return -EACCES;
 	else if(proc_data[id].curr_read == proc_data[id].max_num)
 	{
-		printk(KERN_ALERT "pfs: No more data to read for process %d\n", pid);
+		printk(KERN_ALERT "partb_A1: No more data to read for process %d\n", pid);
 		return -1;
 	}
 	else
@@ -217,13 +217,13 @@ ssize_t device_write(struct file *filp, const char* bufSourceData, size_t bufsiz
 			proc_data[id].mode = 1;
 		else
 		{ 
-			printk(KERN_ALERT "pfs: LKM Left Uninitialised for process %d\n", pid);
+			printk(KERN_ALERT "partb_A1: LKM Left Uninitialised for process %d\n", pid);
 			return -EINVAL;
 		} 
-		// 	printk(KERN_ALERT "pfs: wrong mode\n");
+		// 	printk(KERN_ALERT "partb_A1: wrong mode\n");
 		if(temp[1] > 100 || temp[1] < 1)
 		{
-			printk(KERN_ALERT "pfs: LKM Left Uninitialised for process %d\n", pid);
+			printk(KERN_ALERT "partb_A1: LKM Left Uninitialised for process %d\n", pid);
 			return -EINVAL;
 		}
 		proc_data[id].curr_write = 0;
@@ -240,13 +240,13 @@ ssize_t device_write(struct file *filp, const char* bufSourceData, size_t bufsiz
 		
 		proc_data[id].curr_write++;
 		ret = proc_data[id].max_num - proc_data[id].curr_write;
-		printk(KERN_INFO "pfs: data written to process %d and objects remaining are %d\n", pid, ret);
+		printk(KERN_INFO "partb_A1: data written to process %d and objects remaining are %d\n", pid, ret);
 	}
 
 	if(!proc_data[id].sorted && proc_data[id].curr_write == proc_data[id].max_num)
 	{
 		sort_data(id);
-		printk(KERN_INFO "pfs: data sorted for process %d\n", pid);
+		printk(KERN_INFO "partb_A1: data sorted for process %d\n", pid);
 	}
 	
 	return ret;
@@ -265,14 +265,14 @@ static int driver_entry(void)
 {
 	OPF = proc_create(FILE_NAME, 0666, NULL, &fops);
 	initialize_data();
-	printk(KERN_INFO "pfs: allocated pfs entry");
+	printk(KERN_INFO "partb_A1: allocated partb_A1 entry");
 	return 0;
 }
 
 static void driver_exit(void)
 {
 	remove_proc_entry(FILE_NAME, NULL);
-	printk(KERN_ALERT "pfs: device unloaded\n");			
+	printk(KERN_ALERT "partb_A1: device unloaded\n");			
 }
 
 MODULE_LICENSE("GPL");

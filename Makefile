@@ -3,8 +3,8 @@
 #	Vishesh Agarwal (15CS30040)
 #	Kernel Version - 4.15.0-29-generic
 
-obj-m += pfs.o
-obj-m += tree_pfs.o
+obj-m += partb_A1.o
+obj-m += partb_A2.o
 
 all:
 	make -C /usr/src/linux-headers-$(shell uname -r) SUBDIRS=$(shell pwd) modules
