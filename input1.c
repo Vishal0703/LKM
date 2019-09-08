@@ -1,8 +1,14 @@
+/* 
+	Group - 10
+	Vishal Gupta (15CS30039)
+	Vishesh Agarwal (15CS30040)
+	Kernel Version - 4.15.0-29-generic
+*/
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<fcntl.h>
 
-// #define FILE "/dev/mytestdevice"
 #define FILE "/proc/partb_1_15CS30039"
 
 
