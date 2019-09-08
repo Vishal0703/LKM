@@ -1,7 +1,6 @@
 #include<linux/kernel.h>
 #include<linux/module.h>
 #include<linux/proc_fs.h>
-#include<linux/cdev.h>
 #include<linux/semaphore.h>
 #include<linux/uaccess.h>
 #include<linux/init.h>
@@ -9,6 +8,7 @@
 #include<linux/string.h>
 #include<linux/sort.h>
 #include<linux/slab.h>
+#include<linux/errno.h>
 
 #define MAX_PROC 100
 #define FILE_NAME "partb_2_15CS30039"
@@ -71,7 +71,7 @@ static struct proc_dir_entry *OPF;
 
 void initialize_data(void)
 {
-	int i,j;
+	int i;
 	for(i = 0; i<MAX_PROC; i++)
 	{
 		proc_data[i].ct = NULL;
@@ -216,7 +216,7 @@ int calculate_info(struct obj_info* temp, int id)
 		arr = ciaf_str(temp, proc_data[id].ct, proc_data[id].ct);
 	temp->mindepth = arr[1]-1;
 	temp->maxdepth = arr[2]-1;
-	return arr[0];
+	return max(arr[0],0);
 }
 
 void foaf_int(struct search_obj* temp, struct int_tree* root)
@@ -449,7 +449,7 @@ int device_open(struct inode* inode, struct file* filp)
 
 int device_close(struct inode* inode, struct file* filp)
 {
-	int pid = (int)task_pid_nr(current), j=0;
+	int pid = (int)task_pid_nr(current);
 	int id = find_proc(pid);
 	proc_data[id].pid = -1;
 	proc_data[id].ct = NULL;
@@ -458,7 +458,7 @@ int device_close(struct inode* inode, struct file* filp)
 	proc_data[id].head_it = NULL;
 	proc_data[id].pid = -1;
 	proc_data[id].mode = -1;
-	proc_data[id].tm = 'i';
+	proc_data[id].tm = 'z';
 	proc_data[id].curr_read = 0;
 	printk(KERN_INFO "pfs: closing device for process %d\n", pid);
 	return 0;
@@ -469,7 +469,8 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 	int pid = (int)task_pid_nr(current);
 	int id = find_proc(pid);
 	char temp[100];
-	struct int_tree* l = NULL;
+	if(proc_data[id].tm == 'z')
+		return -EACCES;
 	printk(KERN_INFO "tree_pfs: reading data for process %d\n", pid);
 	if(proc_data[id].tm == 'i')
 	{
@@ -483,7 +484,7 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 			if(proc_data[id].head_it == NULL)
 			{
 				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
-				return -1;
+				return 0;
 			}
 			printk(KERN_INFO "tree_ pfs: value read is %d for process %d\n", (proc_data[id].head_it)->node, pid);
 			int_to_char(temp, (proc_data[id].head_it)->node);
@@ -500,7 +501,7 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 			if(proc_data[id].head_ct == NULL)
 			{
 				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
-				return -1;
+				return 0;
 			}
 			printk(KERN_INFO "tree_ pfs: value read is %s for process %d\n", (proc_data[id].head_ct)->node, pid);
 			strcpy(temp, (proc_data[id].head_ct)->node);
@@ -521,7 +522,7 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 			if(proc_data[id].head_it == NULL)
 			{
 				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
-				return -1;
+				return 0;
 			}
 			printk(KERN_INFO "tree_ pfs: value read is %d for process %d\n", (proc_data[id].head_it)->node, pid);
 			int_to_char(temp, (proc_data[id].head_it)->node);
@@ -538,7 +539,7 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 			if(proc_data[id].head_ct == NULL)
 			{
 				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
-				return -1;
+				return 0;
 			}
 			printk(KERN_INFO "tree_ pfs: value read is %s for process %d\n", (proc_data[id].head_ct)->node, pid);
 			strcpy(temp, (proc_data[id].head_ct)->node);
@@ -559,7 +560,7 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 			if(proc_data[id].head_it == NULL)
 			{
 				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
-				return -1;
+				return 0;
 			}
 			printk(KERN_INFO "tree_ pfs: value read is %d for process %d\n", (proc_data[id].head_it)->node, pid);
 			int_to_char(temp, (proc_data[id].head_it)->node);
@@ -576,7 +577,7 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 			if(proc_data[id].head_ct == NULL)
 			{
 				printk(KERN_ALERT "tree_pfs: No more data to read for process %d\n", pid);
-				return -1;
+				return 0;
 			}
 			printk(KERN_INFO "tree_ pfs: value read is %s for process %d\n", (proc_data[id].head_ct)->node, pid);
 			strcpy(temp, (proc_data[id].head_ct)->node);
@@ -586,7 +587,7 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 	}
 
 	ret = copy_to_user(bufStoreData, temp, bufsize);
-	return ret;
+	return 1;
 }
 
 ssize_t device_write(struct file *filp, const char* bufSourceData, size_t bufsize, loff_t* curroffset)
@@ -594,6 +595,8 @@ ssize_t device_write(struct file *filp, const char* bufSourceData, size_t bufsiz
 	int pid = (int)task_pid_nr(current);
 	int id = find_proc(pid);
 	char temp[100];
+	if(proc_data[id].tm == 'z')
+		return -EACCES;
 	ret = copy_from_user(temp, bufSourceData, bufsize);
 
 	if(proc_data[id].mode == 0)
@@ -625,7 +628,6 @@ static long device_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
 						proc_data[id].it = NULL;
 						proc_data[id].head_ct = NULL;
 						proc_data[id].head_it = NULL;
-						proc_data[id].pid = pid;
 						proc_data[id].tm = 'i';
 						proc_data[id].curr_read = 0;
 						if(t==0xFF)
@@ -633,11 +635,13 @@ static long device_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
 						else if(t==0xF0)
 							proc_data[id].mode = 1;
 						else
-							return -1;
+							return -EINVAL;
 						printk(KERN_INFO "tree_pfs: Mode changed to mode %c for process %d \n", t, pid);
 						return 0;
 
 		case PB2_SET_ORDER:
+						if(proc_data[id].tm == 'z')
+							return -EACCES;
 						copy_from_user(&tm, (char *)arg, sizeof(tm));
 						if(tm == 'i')
 							proc_data[id].tm = 'i';
@@ -646,7 +650,7 @@ static long device_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
 						else if(tm == 's')
 							proc_data[id].tm = 's';
 						else
-							return -1;
+							return -EINVAL;
 
 						if(proc_data[id].mode == 0)
 							proc_data[id].head_it = NULL;
@@ -658,6 +662,8 @@ static long device_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
 						return 0; 
 
 		case PB2_GET_INFO:
+						if(proc_data[id].tm == 'z')
+							return -EACCES;
 						copy_from_user(&temp, (struct obj_info *)arg, sizeof(temp));
 						temp.deg1cnt = temp.deg2cnt = temp.deg3cnt = temp.maxdepth = temp.mindepth = 0;
 						num_nodes = calculate_info(&temp, id);
@@ -666,6 +672,8 @@ static long device_ioctl(struct file* filp, unsigned int cmd, unsigned long arg)
 						return num_nodes;
 
 		case PB2_GET_OBJ:
+						if(proc_data[id].tm == 'z')
+							return -EACCES;
 						copy_from_user(&st, (struct search_obj *)arg, sizeof(st));
 						find_obj(&st, id);
 						copy_to_user((struct search_obj *)arg, &st, sizeof(st));

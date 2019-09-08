@@ -85,7 +85,7 @@ int main(int argc, char const *argv[])
 
 			case 'r':
 					ret = read(fd, read_buf, sizeof(read_buf));
-					if(ret < 0)
+					if(ret <= 0)
 						printf("No more data to read\n");
 					else
 						printf("%s\n", read_buf);
@@ -120,7 +120,7 @@ int main(int argc, char const *argv[])
 					printf("Number of nodes with degree 3 in BST : %d\n", oi.deg3cnt);
 					printf("Minimum height of BST : %d\n", oi.mindepth);
 					printf("MAximum height of BST : %d\n", oi.maxdepth);
-					printf("Number of elements in BST %d\n", num);
+					printf("Number of elements in BST : %d\n", num);
 					break;
 
 			case 'o':

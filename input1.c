@@ -56,8 +56,11 @@ int main(int argc, char const *argv[])
 					printf("%d more objects to write\n",ret);
 					break;
 			case 'r':
-					read(fd, read_buf, sizeof(read_buf));
-					printf("%s\n", read_buf);
+					ret = read(fd, read_buf, sizeof(read_buf));
+					if(ret <= 0)
+						printf("No more objects to read\n");
+					else
+						printf("%s\n", read_buf);
 					break;
 			case 'e':
 					printf("Exiting process\n");

@@ -1,13 +1,13 @@
 #include<linux/kernel.h>
 #include<linux/module.h>
 #include<linux/proc_fs.h>
-#include<linux/cdev.h>
 #include<linux/semaphore.h>
 #include<linux/uaccess.h>
 #include<linux/init.h>
 #include<linux/sched.h>
 #include<linux/string.h>
 #include<linux/sort.h>
+#include<linux/errno.h>
 
 #define MAX_PROC 100
 #define FILE_NAME "partb_1_15CS30039"
@@ -168,7 +168,7 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 	char temp[100];
 	printk(KERN_INFO "pfs: reading data for process %d\n", pid);
 	if(proc_data[id].curr_write != proc_data[id].max_num)
-		return -1;
+		return -EACCES;
 	else if(proc_data[id].curr_read == proc_data[id].max_num)
 	{
 		printk(KERN_ALERT "pfs: No more data to read for process %d\n", pid);
@@ -183,7 +183,7 @@ ssize_t device_read(struct file *filp, char* bufStoreData, size_t bufsize, loff_
 		proc_data[id].curr_read++;
 	}
 	ret = copy_to_user(bufStoreData, temp, bufsize);
-	return ret;
+	return 1;
 }
 
 ssize_t device_write(struct file *filp, const char* bufSourceData, size_t bufsize, loff_t* curroffset)
@@ -200,9 +200,17 @@ ssize_t device_write(struct file *filp, const char* bufSourceData, size_t bufsiz
 			proc_data[id].mode = 0; 
 		else if(((unsigned char)temp[0]) == 0xF0)
 			proc_data[id].mode = 1;
-		// else
-		printk(KERN_INFO "%d %d\n", temp[0], temp[0] == 0xFF);
+		else
+		{ 
+			printk(KERN_ALERT "pfs: LKM Left Uninitialised for process %d\n", pid);
+			return -EINVAL;
+		} 
 		// 	printk(KERN_ALERT "pfs: wrong mode\n");
+		if(temp[1] > 100 || temp[1] < 1)
+		{
+			printk(KERN_ALERT "pfs: LKM Left Uninitialised for process %d\n", pid);
+			return -EINVAL;
+		}
 		proc_data[id].curr_write = 0;
 		proc_data[id].max_num = temp[1]; 
 	}
